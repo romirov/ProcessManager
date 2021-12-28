@@ -1,14 +1,14 @@
 package com.processmanager;
 
 /**
- * The class is for setting priorities for processes.
+ * The enum is for setting priorities for processes.
  * @author hanza
  *
  */
 public enum ProcessPriority {
-	LOW (1),
-	MEDIUM (5),
-	HIGH (10);
+	MIN_PRIORITY (10),
+	NORM_PRIORITY (5),
+	MAX_PRIORITY (1);
 	
 	private int score;
 	

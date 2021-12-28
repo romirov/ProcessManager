@@ -1,82 +1,137 @@
 package com.processmanager;
 
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ProcessManager {
-	
-	private Map<Long, MyProcess> listProcesses;
-	private static Logger logger;
-	private final int MAX_PROCESSES;
-	
-	public  ProcessManager() {
-		this.listProcesses = new HashMap<Long, MyProcess>();
-		logger = Logger.getLogger(ProcessManager.class.getName());
+public abstract class ProcessManager implements ProcessManagerCommands{
+	private List<MyProcess> listProcesses;//contains a list of active processes
+	private final int MAX_PROCESSES;//maximum value of active processes
+
+	public ProcessManager() {
+		this.listProcesses = new ArrayList<MyProcess>();
 		MAX_PROCESSES = 3;
+		System.out.println("The maximum number of processes that the program can control is " + MAX_PROCESSES);
 	}
 	
-	public  ProcessManager(int numberOfProcesses) {
-		this.listProcesses = new HashMap<Long, MyProcess>();
-		logger = Logger.getLogger(ProcessManager.class.getName());
-		MAX_PROCESSES = numberOfProcesses;
-	}
-
-	/**
-	 * Create new process
-	 */
-	public void add() {
-		MyProcess process = new MyProcess();
-		this.listProcesses.put(process.getPID(), process);
-		logger.log(Level.INFO, "Create new process with PID " + process.getPID());
+	public  ProcessManager (int numberOfProcess) {
+		this.listProcesses = new ArrayList<MyProcess>();
+		MAX_PROCESSES = numberOfProcess;
+		System.out.println("The maximum number of processes that the program can control is " + MAX_PROCESSES);
 	}
 	
-	/**
-	 * Create new process
-	 */
-	public void add(int z) {
-		MyProcess process = new MyProcess();
-		this.listProcesses.put(process.getPID(), process);
-		logger.log(Level.INFO, "Create new process with PID " + process.getPID());
+	public List<MyProcess> getListProcesses() {
+		return listProcesses;
 	}
 	
+	public int getMAX_PROCESSES() {
+		return MAX_PROCESSES;
+	}
 	/**
-	 * Lists active processes
+	 * Add new processes
+	 * @param process - is the process added to Process Manager
 	 */
-	public void list() {
+	public abstract void add(MyProcess process);
+	
+	/**
+	 * Lists processes sorted by time
+	 */
+	public void listTime() {
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("Running processes: \n");
-		this.listProcesses.forEach((pid, process) -> stringBuilder.append(
-				"Activ process{ PID: " + process.getPID()
-				+ "Priority" + process.getPriority() + "}\n"));
-		logger.log(Level.INFO, stringBuilder.toString());
-	}
-	
-	
-	public void killProcess(Long pid) {
-		if(listProcesses.containsKey(pid)) {
-			MyProcess process = this.listProcesses.get(pid);
-			process.kill();
-			listProcesses.remove(pid);
-			logger.log(Level.INFO, "Kill process with PID " + process.getPID());
-		} else {
-			logger.log(Level.SEVERE, "Process with PID " + pid + " not found!");
+		if(!listProcesses.isEmpty()) {
+			stringBuilder.append("Running processes by time: \n");
+			listProcesses.forEach(process -> stringBuilder.append("Activ process{PID: " + process.getPID()
+					+ "\tPriority: " + process.getPriority() + "}\n"));
+			System.out.println(stringBuilder.toString());
+		} else{
+			System.out.println("ERROR: No active processes!");
 		}
 	}
 	
-	public void killGroupProcesses(List<Long> pids) {
-		pids.forEach(pid -> killProcess(pid));
+	/**
+	 * Lists processes sorted by PID
+	 */
+	public void listPid() {
+		StringBuilder stringBuilder = new StringBuilder();
+		if(!listProcesses.isEmpty()) {
+			stringBuilder.append("Running processes by PID: \n");
+			Stream<MyProcess> stream = listProcesses.stream().sorted((process1, process2) -> Long.valueOf(process1.getPID()).compareTo(process2.getPID()));
+			List<MyProcess> listProcessesSortedByPid = stream.collect(Collectors.toList());
+			listProcessesSortedByPid.forEach(process -> stringBuilder.append("Activ process{PID: " + process.getPID()
+					+ "\tPriority: " + process.getPriority() + "}\n"));
+			System.out.println(stringBuilder.toString());
+		} else{
+			System.out.println("ERROR: No active processes!");
+		}
 	}
 	
-	public void killAllProcesses() {
+	/**
+	 * Lists processes sorted by priority
+	 */
+	public void listPriority() {
+		StringBuilder stringBuilder = new StringBuilder();
+		if(!listProcesses.isEmpty()) {
+			stringBuilder.append("Running processes by priority: \n");
+			Stream<MyProcess> stream = listProcesses.stream().sorted((process1, process2) -> process2.getPriority().compareTo(process1.getPriority()));
+			List<MyProcess> listProcessesSortedByPriority = stream.collect(Collectors.toList());
+			listProcessesSortedByPriority.forEach(process -> stringBuilder.append("Activ process{PID: " + process.getPID()
+					+ "\tPriority: " + process.getPriority() + "}\n"));
+			System.out.println(stringBuilder.toString());
+		} else{
+			System.out.println("ERROR: No active processes!");
+		}
+	}
+	
+	/**
+	 * Kill process with PID
+	 * @param pid -identifier of the process in the system
+	 */
+	public void kill(Long pid) {
+		Iterator<MyProcess> processIterator = listProcesses.iterator();
+		while (processIterator.hasNext()) {
+			MyProcess process = processIterator.next();
+			if(process.getPID() == pid) {
+				process.kill();
+				processIterator.remove();
+				System.out.println("Kill process with PID " + pid);
+				break;
+			}
+		}
+	}
+	
+	/**
+	 * Kill processes with priority
+	 * @param priority - priority of the process in the system
+	 */
+	public void killGroup(ProcessPriority priority) {
+		Iterator<MyProcess> processIterator = listProcesses.iterator();
+		int countKilledProcess = 0;
+		while (processIterator.hasNext()) {
+			MyProcess process = processIterator.next();
+			if(process.getPriority() == priority) {
+				process.kill();
+				processIterator.remove();
+				countKilledProcess ++;
+				System.out.println("Kill process with priority " + priority);
+			} 
+		}
+		if(countKilledProcess == 0) {
+			System.out.println("No processes found with priority" + priority);
+		}
+	}
+	
+	/**
+	 * Kill all processes
+	 */
+	public void killAll() {
 		if(listProcesses.size() > 0) {
-			listProcesses.forEach((pid, process) -> process.kill());
+			listProcesses.forEach(process -> process.kill());
 			listProcesses.clear();
-			logger.log(Level.INFO, "All active processes have been killed");
+			System.out.println("All active processes have been killed");
 		} else {
-			logger.log(Level.SEVERE, "No active processes!");
+			System.out.println("ERROR: No active processes!");
 		}
 	}
 }

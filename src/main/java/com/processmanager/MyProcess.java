@@ -2,35 +2,35 @@ package com.processmanager;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+/**
+ * Сlass that implements the process inside the operating system
+ * @author hanza
+ *
+ */
 public final class MyProcess {
-	private final long PID;
-	private ProcessPriority priority;
-	private static Logger logger;
+	private final long PID;//identifier of the process in the system
+	private ProcessPriority priority;//priority of the process
 	
-	public MyProcess(){
-		logger = Logger.getLogger(MyProcess.class.getName());
-		ProcessBuilder builder = new ProcessBuilder("nice", "-n", "1","vim");
+	public MyProcess(String processName){
+		ProcessBuilder builder = new ProcessBuilder("nice", "-n", ProcessPriority.MIN_PRIORITY.toString(), processName);
 		Process process = null;
 		try {
 			process = builder.start();
 		} catch (IOException e) {
-			logger.log(Level.SEVERE, e.getMessage());
+			e.printStackTrace();
 		}
 		this.PID = process.pid();
-		this.priority = ProcessPriority.LOW;
+		this.priority = ProcessPriority.MIN_PRIORITY;
 	}
 	
-	public MyProcess(ProcessPriority priority){
-		logger = Logger.getLogger(MyProcess.class.getName());
-		ProcessBuilder builder = new ProcessBuilder("nice", "-n", priority.toString(), "vim");
+	public MyProcess(String processName, ProcessPriority priority){
+		ProcessBuilder builder = new ProcessBuilder("nice", "-n", priority.toString(), processName);
 		Process process = null;
 		try {
 			process = builder.start();
 		} catch (IOException e) {
-			logger.log(Level.SEVERE, e.getMessage());
+			e.printStackTrace();
 		}
 		this.PID = process.pid();
 		this.priority = priority;
@@ -45,13 +45,13 @@ public final class MyProcess {
 	}
 
 	public void setPriority(ProcessPriority priority) {
-		this.priority = priority;
 		try {
 			Runtime.getRuntime().exec("renice -n " + priority.toString() + "-p" + Long.toString(PID));
 		} catch (IOException e) {
-			logger.log(Level.SEVERE, e.getMessage());
+			e.printStackTrace();
 		}
-		logger.log(Level.INFO, "Process with pid " + Long.toString(PID) + " is set to priority " + priority.toString());
+		this.priority = priority;
+		System.out.println("Process with pid " + Long.toString(PID) + " is set to priority " + priority.toString());
 	}
 
 	public void kill() {
